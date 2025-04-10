@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import personasData from "./config/personas.json";
 import axios from "axios";
+import courseLinks from "./config/courseLinks";
+import ReactMarkdown from "react-markdown";
 
 function App() {
   const [personas, setPersonas] = useState({});
@@ -18,6 +20,19 @@ function App() {
       setHistory(JSON.parse(stored));
     }
   }, []);
+
+  function getCourseSuggestion(question) {
+    const lowerQ = question.toLowerCase();
+    console.log("🚀 ~ getCourseSuggestion ~ lowerQ:", lowerQ);
+
+    for (let course of courseLinks) {
+      if (course.keywords.some((k) => lowerQ.includes(k))) {
+        return `\n\n🚀 Course: **${course.title}**, Link: ${course.link}`;
+      }
+    }
+    // no match then blank
+    return "";
+  }
 
   const handleSpeak = (text) => {
     // Create a new utterance
@@ -62,9 +77,13 @@ function App() {
 
   const handleSubmit = async () => {
     const selected = personas[persona];
-    const prompt = `You are ${selected.name}. ${selected.style}\n\n
+    const suggestion = getCourseSuggestion(question);
+    console.log("🚀 ~ handleSubmit ~ suggestion:", suggestion);
+    const prompt = `You are ${selected.name}. ${selected.style} .Don't give long answers and respond using markdown and include relevant emojis where helpful.\n\n
     User asked: "${question}"\n\n
-    Answer like ${selected.name}:`;
+    Answer like: ${selected.name}\n
+    ${suggestion}}`;
+
     try {
       setLoading(true);
       setError("");
@@ -117,7 +136,7 @@ function App() {
         Persona Chat
       </h1>
 
-      <div className="bg-white shadow-lg p-6 rounded-md w-full max-w-2xl">
+      <div className="bg-white shadow-lg p-6 rounded-md w-full max-w-3xl">
         <div className="mb-4">
           <label htmlFor="" className="block mb-2 font-semibold">
             Choose Persona:
@@ -159,22 +178,23 @@ function App() {
       </div>
 
       {response && selectedPersona && (
-        <div className="mt-6 w-full max-w-2xl bg-white p-6 rounded shadow">
-          <div className="flex mb-4 items-center">
+        <div className="mt-6 w-full max-w-3xl bg-white p-6 rounded shadow">
+          <div className="flex mb-4 items-start">
             <img
               src={selectedPersona.image}
               alt={selectedPersona.name}
               className="w-16 h-16 rounded-full mr-4"
             />
-            <div>
+            <div className="flex flex-col">
               <h2 className="text-xl font-bold">{selectedPersona.name}</h2>
               <p className="text-gray-500">
                 Speaking in {selectedPersona.pronoun} unique style
               </p>
             </div>
-            <div className="whitespace-pre-wrap text-gray-800 break-words max-h-80 overflow-auto">
-              {response}
-            </div>
+          </div>
+
+          <div className="prose max-w-none text-gray-800 break-words max-h-80 overflow-auto">
+            <ReactMarkdown>{response}</ReactMarkdown>
           </div>
         </div>
       )}
